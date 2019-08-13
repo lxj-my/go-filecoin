@@ -82,8 +82,10 @@ require (
 	github.com/libp2p/go-libp2p-host v0.0.1 // indirect
 	github.com/libp2p/go-libp2p-kad-dht v0.1.1
 	github.com/libp2p/go-libp2p-metrics v0.0.1 // indirect
+	github.com/libp2p/go-libp2p-peer v0.2.0
 	github.com/libp2p/go-libp2p-peerstore v0.1.2
 	github.com/libp2p/go-libp2p-pubsub v0.1.0
+	github.com/libp2p/go-libp2p-routing v0.1.0
 	github.com/libp2p/go-libp2p-swarm v0.1.1
 	github.com/libp2p/go-stream-muxer v0.0.1
 	github.com/libp2p/go-testutil v0.0.1 // indirect
@@ -94,6 +96,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/morikuni/aec v0.0.0-20170113033406-39771216ff4c // indirect
 	github.com/multiformats/go-multiaddr v0.0.4
+	github.com/multiformats/go-multiaddr-dns v0.0.3
 	github.com/multiformats/go-multiaddr-net v0.0.1
 	github.com/multiformats/go-multibase v0.0.1
 	github.com/multiformats/go-multihash v0.0.6

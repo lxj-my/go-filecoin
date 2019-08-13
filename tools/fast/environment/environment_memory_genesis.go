@@ -82,7 +82,7 @@ func (e *MemoryGenesis) GetFunds(ctx context.Context, p *fast.Filecoin) error {
 	defer e.processesMu.Unlock()
 
 	e.log.Infof("GetFunds for process: %s", p.String())
-	return series.SendFilecoinDefaults(ctx, e.Processes()[0], p, 1000)
+	return series.SendFilecoinDefaults(ctx, e.processes[0], p, 1000)
 }
 
 // GenesisCar provides a url where the genesis file can be fetched from
@@ -240,7 +240,7 @@ func (e *MemoryGenesis) buildGenesis(funds *big.Int) error {
 		Miners: []*gengen.CreateStorageMinerConfig{
 			{
 				Owner:               0,
-				NumCommittedSectors: 1,
+				NumCommittedSectors: 128,
 			},
 		},
 		ProofsMode: e.proofsMode,

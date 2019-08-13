@@ -115,6 +115,8 @@ func (f *Filecoin) InitDaemon(ctx context.Context, args ...string) (testbedi.Out
 		}
 	}
 
+	fmt.Println(args)
+
 	return f.core.Init(ctx, args...)
 }
 
@@ -129,6 +131,8 @@ func (f *Filecoin) StartDaemon(ctx context.Context, wait bool, args ...string) (
 			args = append(args, opt()...)
 		}
 	}
+
+	fmt.Println(args)
 
 	out, err := f.core.Start(ctx, wait, args...)
 	if err != nil {
