@@ -490,3 +490,18 @@ ProvingSet: %s
 		}),
 	},
 }
+
+var minerSetWorkerAddressCmd = &cmds.Command{
+	Arguments: []cmdkit.Argument{
+		cmdkit.StringArg("newWorkerAddress", true, false, "The address of the new miner worker to use."),
+	},
+	Run: func(req *cmds.Request, re cmds.ResponseEmitter, env cmds.Environment) error {
+		var currentWorker, newWorker address.Address
+
+		err := GetPorcelainAPI(env).MinerSetWorkerAddress()
+
+		return cmds.EmitOnce(re, fmt.Sprintf("Changed worker from '%s', to '%s'", currentWorker.String(), newWorker.String()))
+	},
+	Type:     "",
+	Encoders: stringEncoderMap,
+}

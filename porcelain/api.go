@@ -254,3 +254,7 @@ func (a *API) PingMinerWithTimeout(
 ) error {
 	return PingMinerWithTimeout(ctx, minerPID, timeout, a)
 }
+
+func (a *API) MinerSetWorkerAddress(ctx context.Context, toAddr address.Address, gasPrice types.AttoFIL, gasLimit types.GasUnits) error {
+	return MinerSetWorkerAddress(ctx, a, toAddr, gasPrice, gasLimit)
+}
