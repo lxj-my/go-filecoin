@@ -7,6 +7,7 @@ import (
 	"github.com/filecoin-project/go-filecoin/abi"
 	"github.com/filecoin-project/go-filecoin/actor"
 	"github.com/filecoin-project/go-filecoin/address"
+	"github.com/filecoin-project/go-filecoin/chain"
 	"github.com/filecoin-project/go-filecoin/consensus"
 	"github.com/filecoin-project/go-filecoin/metrics"
 	"github.com/filecoin-project/go-filecoin/types"
@@ -35,8 +36,8 @@ type Outbox struct {
 }
 
 type outboxChainProvider interface {
+	chain.TipSetProvider
 	GetHead() types.TipSetKey
-	GetTipSet(tsKey types.TipSetKey) (types.TipSet, error)
 }
 
 type actorProvider interface {
@@ -130,8 +131,8 @@ func (ob *Outbox) Send(ctx context.Context, from, to address.Address, value type
 }
 
 // HandleNewHead maintains the message queue in response to a new head tipset.
-func (ob *Outbox) HandleNewHead(ctx context.Context, oldHead, newHead types.TipSet) error {
-	return ob.policy.HandleNewHead(ctx, ob.queue, oldHead, newHead)
+func (ob *Outbox) HandleNewHead(ctx context.Context, oldTips, newTips []types.TipSet) error {
+	return ob.policy.HandleNewHead(ctx, ob.queue, oldTips, newTips)
 }
 
 // nextNonce returns the next expected nonce value for an account actor. This is the larger

@@ -448,7 +448,7 @@ func (nc *Config) Build(ctx context.Context) (*Node, error) {
 	inbox := core.NewInbox(msgPool, core.InboxMaxAgeTipsets, chainStore, messageStore)
 
 	msgQueue := core.NewMessageQueue()
-	outboxPolicy := core.NewMessageQueuePolicy(chainStore, messageStore, core.OutboxMaxAgeRounds)
+	outboxPolicy := core.NewMessageQueuePolicy(messageStore, core.OutboxMaxAgeRounds)
 	msgPublisher := newDefaultMessagePublisher(pubsub.NewPublisher(fsub), net.MessageTopic, msgPool)
 	outbox := core.NewOutbox(fcWallet, consensus.NewOutboundMessageValidator(), msgQueue, msgPublisher, outboxPolicy, chainStore, chainState)
 
@@ -732,20 +732,31 @@ func (node *Node) handleNewChainHeads(ctx context.Context, prevHead types.TipSet
 				log.Error("tipset of size 0 published on heaviest tipset channel. ignoring and waiting for a new heaviest tipset.")
 				continue
 			}
+			if newHead.Equals(prevHead) {
+				log.Errorf("non-new head published on heaviest tipset channel, ignoring %s", newHead.Key())
+				continue
+			}
 
-			if err := node.Outbox.HandleNewHead(ctx, prevHead, newHead); err != nil {
-				log.Error("updating outbound message queue for new tipset", err)
+			oldTips, newTips, err := chain.CollectTipsToCommonAncestor(ctx, node.ChainReader, prevHead, newHead)
+			if err == nil {
+				if err := node.Outbox.HandleNewHead(ctx, oldTips, newTips); err != nil {
+					log.Errorf("updating outbound message queue for tipset %s, prev %s: %s", newHead.Key(), prevHead.Key(), err)
+				}
+				if err := node.Inbox.HandleNewHead(ctx, oldTips, newTips); err != nil {
+					log.Errorf("updating message pool for tipset %s, prev %s: %s", newHead.Key(), prevHead.Key(), err)
+				}
+			} else {
+				log.Errorf("traversing chain with new head %s, prev %s: %s", newHead.Key(), prevHead.Key(), err)
 			}
-			if err := node.Inbox.HandleNewHead(ctx, prevHead, newHead); err != nil {
-				log.Error("updating message pool for new tipset", err)
-			}
-			prevHead = newHead
 
 			if node.StorageMiner != nil {
 				if err := node.StorageMiner.OnNewHeaviestTipSet(newHead); err != nil {
 					log.Error(err)
 				}
 			}
+
+			prevHead = newHead
+
 		case <-ctx.Done():
 			return
 		}

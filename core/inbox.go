@@ -21,13 +21,16 @@ type Inbox struct {
 	// Maximum age of a pool message.
 	maxAgeTipsets uint
 
-	chain           InboxChainProvider
-	messageProvider MessageProvider // nolint: structcheck
+	// Provides tipsets for chain traversal.
+	chain           inboxChainProvider
+	messageProvider MessageProvider
 }
 
-// InboxChainProvider provides chain access for updating the message pool in response to new heads.
-// Exported for testing.
-type InboxChainProvider interface {
+// inboxChainProvider provides chain access for updating the message pool in response to new heads.
+type inboxChainProvider interface {
+	// The TipSetProvider is used only for counting non-null tipsets when expiring messages. We could remove
+	// this dependency if expiration was based on round number, or if this object maintained a short
+	// list of non-empty tip heights.
 	chain.TipSetProvider
 	GetHead() types.TipSetKey
 }
@@ -38,7 +41,7 @@ type MessageProvider interface {
 }
 
 // NewInbox constructs a new inbox.
-func NewInbox(pool *MessagePool, maxAgeRounds uint, chain InboxChainProvider, messages MessageProvider) *Inbox {
+func NewInbox(pool *MessagePool, maxAgeRounds uint, chain inboxChainProvider, messages MessageProvider) *Inbox {
 	return &Inbox{
 		pool:            pool,
 		maxAgeTipsets:   maxAgeRounds,
@@ -71,16 +74,9 @@ func (ib *Inbox) Pool() *MessagePool {
 // HandleNewHead updates the message pool in response to a new head tipset.
 // This removes messages from the pool that are found in the newly adopted chain and adds back
 // those from the removed chain (if any) that do not appear in the new chain.
-// We think that the right model for keeping the message pool up to date is
-// to think about it like a garbage collector.
-func (ib *Inbox) HandleNewHead(ctx context.Context, oldHead, newHead types.TipSet) error {
-	oldTips, newTips, err := CollectTipsToCommonAncestor(ctx, ib.chain, oldHead, newHead)
-	if err != nil {
-		return err
-	}
-
+// The `oldTips` and `newTips` lists are expected in descending height order, and each may be empty.
+func (ib *Inbox) HandleNewHead(ctx context.Context, oldTips, newTips []types.TipSet) error {
 	// Add all message from the old tipsets to the message pool, so they can be mined again.
-	// The tipsets are iterated in reverse height order, but the order doesn't matter here.
 	for _, tipset := range oldTips {
 		for i := 0; i < tipset.Len(); i++ {
 			block := tipset.At(i)
@@ -122,7 +118,10 @@ func (ib *Inbox) HandleNewHead(ctx context.Context, oldHead, newHead types.TipSe
 	}
 
 	// prune all messages that have been in the pool too long
-	return timeoutMessages(ctx, ib.pool, ib.chain, newHead, ib.maxAgeTipsets)
+	if len(newTips) > 0 {
+		return timeoutMessages(ctx, ib.pool, ib.chain, newTips[0], ib.maxAgeTipsets)
+	}
+	return nil
 }
 
 // timeoutMessages removes all messages from the pool that arrived more than maxAgeTipsets tip sets ago.
